@@ -1,0 +1,336 @@
+"""
+Student Result Management System
+A comprehensive system to manage student records, subjects, and results
+"""
+
+import json
+import os
+from datetime import datetime
+
+
+class Student:
+    """Class to represent a student"""
+    
+    def __init__(self, student_id, name, class_name, roll_number):
+        self.student_id = student_id
+        self.name = name
+        self.class_name = class_name
+        self.roll_number = roll_number
+        self.subjects = {}
+    
+    def add_subject(self, subject_name, marks, max_marks=100):
+        """Add a subject with marks"""
+        self.subjects[subject_name] = {
+            'marks': marks,
+            'max_marks': max_marks
+        }
+    
+    def calculate_total(self):
+        """Calculate total marks"""
+        return sum(subject['marks'] for subject in self.subjects.values())
+    
+    def calculate_percentage(self):
+        """Calculate percentage"""
+        total_marks = sum(subject['marks'] for subject in self.subjects.values())
+        total_max = sum(subject['max_marks'] for subject in self.subjects.values())
+        return (total_marks / total_max * 100) if total_max > 0 else 0
+    
+    def get_grade(self):
+        """Calculate grade based on percentage"""
+        percentage = self.calculate_percentage()
+        if percentage >= 90:
+            return 'A+'
+        elif percentage >= 80:
+            return 'A'
+        elif percentage >= 70:
+            return 'B+'
+        elif percentage >= 60:
+            return 'B'
+        elif percentage >= 50:
+            return 'C'
+        elif percentage >= 40:
+            return 'D'
+        else:
+            return 'F'
+    
+    def get_result_status(self):
+        """Check if student passed or failed"""
+        for subject in self.subjects.values():
+            if subject['marks'] < (subject['max_marks'] * 0.33):  # 33% passing marks
+                return 'FAIL'
+        return 'PASS'
+    
+    def to_dict(self):
+        """Convert student object to dictionary"""
+        return {
+            'student_id': self.student_id,
+            'name': self.name,
+            'class_name': self.class_name,
+            'roll_number': self.roll_number,
+            'subjects': self.subjects
+        }
+    
+    @classmethod
+    def from_dict(cls, data):
+        """Create student object from dictionary"""
+        student = cls(
+            data['student_id'],
+            data['name'],
+            data['class_name'],
+            data['roll_number']
+        )
+        student.subjects = data['subjects']
+        return student
+
+
+class ResultManagementSystem:
+    """Main class for the result management system"""
+    
+    def __init__(self, filename='students_data.json'):
+        self.filename = filename
+        self.students = {}
+        self.load_data()
+    
+    def load_data(self):
+        """Load student data from file"""
+        if os.path.exists(self.filename):
+            try:
+                with open(self.filename, 'r') as f:
+                    data = json.load(f)
+                    for student_id, student_data in data.items():
+                        self.students[student_id] = Student.from_dict(student_data)
+                print(f"Loaded {len(self.students)} student records.")
+            except Exception as e:
+                print(f"Error loading data: {e}")
+        else:
+            print("No existing data found. Starting fresh.")
+    
+    def save_data(self):
+        """Save student data to file"""
+        try:
+            data = {sid: student.to_dict() for sid, student in self.students.items()}
+            with open(self.filename, 'w') as f:
+                json.dump(data, f, indent=4)
+            print("Data saved successfully!")
+        except Exception as e:
+            print(f"Error saving data: {e}")
+    
+    def generate_student_id(self):
+        """Generate unique student ID"""
+        if not self.students:
+            return 'STU001'
+        last_id = max(self.students.keys())
+        num = int(last_id[3:]) + 1
+        return f'STU{num:03d}'
+    
+    def add_student(self):
+        """Add a new student"""
+        print("\n=== Add New Student ===")
+        name = input("Enter student name: ").strip()
+        class_name = input("Enter class: ").strip()
+        roll_number = input("Enter roll number: ").strip()
+        
+        student_id = self.generate_student_id()
+        student = Student(student_id, name, class_name, roll_number)
+        
+        # Add subjects
+        num_subjects = int(input("Enter number of subjects: "))
+        for i in range(num_subjects):
+            print(f"\nSubject {i+1}:")
+            subject_name = input("  Subject name: ").strip()
+            marks = float(input("  Marks obtained: "))
+            max_marks = float(input("  Maximum marks (default 100): ") or 100)
+            student.add_subject(subject_name, marks, max_marks)
+        
+        self.students[student_id] = student
+        self.save_data()
+        print(f"\nStudent added successfully! ID: {student_id}")
+    
+    def search_student(self):
+        """Search for a student"""
+        print("\n=== Search Student ===")
+        print("1. Search by Student ID")
+        print("2. Search by Name")
+        print("3. Search by Roll Number")
+        
+        choice = input("Enter choice: ").strip()
+        
+        if choice == '1':
+            student_id = input("Enter Student ID: ").strip()
+            if student_id in self.students:
+                return self.students[student_id]
+            else:
+                print("Student not found!")
+                return None
+        
+        elif choice == '2':
+            name = input("Enter student name: ").strip().lower()
+            found_students = [s for s in self.students.values() 
+                            if name in s.name.lower()]
+            if found_students:
+                print(f"\nFound {len(found_students)} student(s):")
+                for i, student in enumerate(found_students, 1):
+                    print(f"{i}. {student.name} (ID: {student.student_id}, Roll: {student.roll_number})")
+                
+                if len(found_students) == 1:
+                    return found_students[0]
+                else:
+                    idx = int(input("Select student number: ")) - 1
+                    return found_students[idx] if 0 <= idx < len(found_students) else None
+            else:
+                print("No students found!")
+                return None
+        
+        elif choice == '3':
+            roll = input("Enter roll number: ").strip()
+            found_students = [s for s in self.students.values() 
+                            if s.roll_number == roll]
+            if found_students:
+                return found_students[0]
+            else:
+                print("Student not found!")
+                return None
+    
+    def display_result(self, student):
+        """Display student result"""
+        if not student:
+            return
+        
+        print("\n" + "="*60)
+        print("STUDENT RESULT CARD".center(60))
+        print("="*60)
+        print(f"Student ID     : {student.student_id}")
+        print(f"Name           : {student.name}")
+        print(f"Class          : {student.class_name}")
+        print(f"Roll Number    : {student.roll_number}")
+        print("-"*60)
+        print(f"{'Subject':<20} {'Marks':<15} {'Max Marks':<15}")
+        print("-"*60)
+        
+        for subject, data in student.subjects.items():
+            print(f"{subject:<20} {data['marks']:<15} {data['max_marks']:<15}")
+        
+        print("-"*60)
+        print(f"Total Marks    : {student.calculate_total()}")
+        print(f"Percentage     : {student.calculate_percentage():.2f}%")
+        print(f"Grade          : {student.get_grade()}")
+        print(f"Result         : {student.get_result_status()}")
+        print("="*60)
+    
+    def update_marks(self):
+        """Update student marks"""
+        student = self.search_student()
+        if not student:
+            return
+        
+        print(f"\nUpdating marks for: {student.name}")
+        print("\nCurrent subjects:")
+        for i, subject in enumerate(student.subjects.keys(), 1):
+            print(f"{i}. {subject}")
+        
+        subject_name = input("\nEnter subject name to update: ").strip()
+        if subject_name in student.subjects:
+            new_marks = float(input("Enter new marks: "))
+            student.subjects[subject_name]['marks'] = new_marks
+            self.save_data()
+            print("Marks updated successfully!")
+        else:
+            print("Subject not found!")
+    
+    def delete_student(self):
+        """Delete a student record"""
+        student = self.search_student()
+        if not student:
+            return
+        
+        confirm = input(f"\nAre you sure you want to delete {student.name}? (yes/no): ")
+        if confirm.lower() == 'yes':
+            del self.students[student.student_id]
+            self.save_data()
+            print("Student record deleted successfully!")
+        else:
+            print("Deletion cancelled.")
+    
+    def display_all_students(self):
+        """Display all students"""
+        if not self.students:
+            print("\nNo student records found!")
+            return
+        
+        print("\n" + "="*80)
+        print("ALL STUDENTS".center(80))
+        print("="*80)
+        print(f"{'ID':<10} {'Name':<20} {'Class':<10} {'Roll':<10} {'%':<10} {'Grade':<10}")
+        print("-"*80)
+        
+        for student in self.students.values():
+            print(f"{student.student_id:<10} {student.name:<20} {student.class_name:<10} "
+                  f"{student.roll_number:<10} {student.calculate_percentage():<10.2f} "
+                  f"{student.get_grade():<10}")
+        print("="*80)
+    
+    def class_wise_report(self):
+        """Generate class-wise report"""
+        class_name = input("\nEnter class name: ").strip()
+        class_students = [s for s in self.students.values() 
+                         if s.class_name.lower() == class_name.lower()]
+        
+        if not class_students:
+            print(f"No students found in class {class_name}")
+            return
+        
+        # Sort by percentage
+        class_students.sort(key=lambda x: x.calculate_percentage(), reverse=True)
+        
+        print(f"\n{'='*80}")
+        print(f"CLASS {class_name} - RESULT REPORT".center(80))
+        print(f"{'='*80}")
+        print(f"{'Rank':<6} {'Name':<20} {'Roll':<10} {'Total':<10} {'%':<10} {'Grade':<10} {'Status':<10}")
+        print("-"*80)
+        
+        for rank, student in enumerate(class_students, 1):
+            print(f"{rank:<6} {student.name:<20} {student.roll_number:<10} "
+                  f"{student.calculate_total():<10} {student.calculate_percentage():<10.2f} "
+                  f"{student.get_grade():<10} {student.get_result_status():<10}")
+        print("="*80)
+    
+    def run(self):
+        """Main menu"""
+        while True:
+            print("\n" + "="*50)
+            print("STUDENT RESULT MANAGEMENT SYSTEM".center(50))
+            print("="*50)
+            print("1. Add New Student")
+            print("2. Search Student & Display Result")
+            print("3. Update Student Marks")
+            print("4. Delete Student")
+            print("5. Display All Students")
+            print("6. Class-wise Report")
+            print("7. Exit")
+            print("="*50)
+            
+            choice = input("Enter your choice (1-7): ").strip()
+            
+            if choice == '1':
+                self.add_student()
+            elif choice == '2':
+                student = self.search_student()
+                self.display_result(student)
+            elif choice == '3':
+                self.update_marks()
+            elif choice == '4':
+                self.delete_student()
+            elif choice == '5':
+                self.display_all_students()
+            elif choice == '6':
+                self.class_wise_report()
+            elif choice == '7':
+                print("\nThank you for using Student Result Management System!")
+                break
+            else:
+                print("\nInvalid choice! Please try again.")
+
+
+if __name__ == "__main__":
+    system = ResultManagementSystem()
+    system.run()
