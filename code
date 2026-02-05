@@ -1,0 +1,191 @@
+
+
+from student_result_system import Student,
+  ResultManagementSystem
+
+
+def demo_add_sample_students():
+    """Add some sample students to demonstrate the system"""
+    print("Creating Student Result Management System...")
+    system = ResultManagementSystem(filename='demo_students.json')
+    
+    # Sample Student 1
+    print("\n1. Adding student: Alice Johnson")
+    student1 = Student('STU001', 'Alice Johnson', '10th Grade', '101')
+    student1.add_subject('Mathematics', 95, 100)
+    student1.add_subject('Science', 88, 100)
+    student1.add_subject('English', 92, 100)
+    student1.add_subject('History', 85, 100)
+    student1.add_subject('Geography', 90, 100)
+    system.students['STU001'] = student1
+    
+    # Sample Student 2
+    print("2. Adding student: Bob Smith")
+    student2 = Student('STU002', 'Bob Smith', '10th Grade', '102')
+    student2.add_subject('Mathematics', 78, 100)
+    student2.add_subject('Science', 82, 100)
+    student2.add_subject('English', 75, 100)
+    student2.add_subject('History', 80, 100)
+    student2.add_subject('Geography', 77, 100)
+    system.students['STU002'] = student2
+    
+    # Sample Student 3
+    print("3. Adding student: Carol White")
+    student3 = Student('STU003', 'Carol White', '10th Grade', '103')
+    student3.add_subject('Mathematics', 65, 100)
+    student3.add_subject('Science', 70, 100)
+    student3.add_subject('English', 68, 100)
+    student3.add_subject('History', 72, 100)
+    student3.add_subject('Geography', 66, 100)
+    system.students['STU003'] = student3
+    
+    # Sample Student 4 - Different class
+    print("4. Adding student: David Brown")
+    student4 = Student('STU004', 'David Brown', '11th Grade', '201')
+    student4.add_subject('Mathematics', 92, 100)
+    student4.add_subject('Physics', 88, 100)
+    student4.add_subject('Chemistry', 85, 100)
+    student4.add_subject('Biology', 90, 100)
+    student4.add_subject('English', 87, 100)
+    system.students['STU004'] = student4
+    
+    # Sample Student 5 - Failing student
+    print("5. Adding student: Eve Davis")
+    student5 = Student('STU005', 'Eve Davis', '10th Grade', '104')
+    student5.add_subject('Mathematics', 45, 100)
+    student5.add_subject('Science', 30, 100)  # Below passing marks
+    student5.add_subject('English', 55, 100)
+    student5.add_subject('History', 40, 100)
+    student5.add_subject('Geography', 48, 100)
+    system.students['STU005'] = student5
+    
+    # Save all students
+    system.save_data()
+    print("\n✓ Sample students added successfully!")
+    
+    return system
+
+
+def demonstrate_features(system):
+    """Demonstrate various features of the system"""
+    
+    print("\n" + "="*70)
+    print("DEMONSTRATION: Displaying All Students")
+    print("="*70)
+    system.display_all_students()
+    
+    print("\n" + "="*70)
+    print("DEMONSTRATION: Individual Result Card")
+    print("="*70)
+    student = system.students['STU001']
+    system.display_result(student)
+    
+    print("\n" + "="*70)
+    print("DEMONSTRATION: Class-wise Report for 10th Grade")
+    print("="*70)
+    class_students = [s for s in system.students.values() 
+                     if s.class_name == '10th Grade']
+    class_students.sort(key=lambda x: x.calculate_percentage(), reverse=True)
+    
+    print(f"{'Rank':<6} {'Name':<20} {'Roll':<10} {'Total':<10} {'%':<10} {'Grade':<10} {'Status':<10}")
+    print("-"*80)
+    
+    for rank, student in enumerate(class_students, 1):
+        print(f"{rank:<6} {student.name:<20} {student.roll_number:<10} "
+              f"{student.calculate_total():<10} {student.calculate_percentage():<10.2f} "
+              f"{student.get_grade():<10} {student.get_result_status():<10}")
+    print("="*80)
+    
+    print("\n" + "="*70)
+    print("DEMONSTRATION: Subject-wise Analysis")
+    print("="*70)
+    
+    # Analyze performance in Mathematics
+    print("\nMathematics Performance:")
+    print(f"{'Student':<20} {'Marks':<10} {'Percentage':<10}")
+    print("-"*40)
+    for student in system.students.values():
+        if 'Mathematics' in student.subjects:
+            marks = student.subjects['Mathematics']['marks']
+            max_marks = student.subjects['Mathematics']['max_marks']
+            percentage = (marks / max_marks) * 100
+            print(f"{student.name:<20} {marks:<10} {percentage:<10.2f}%")
+    
+    print("\n" + "="*70)
+    print("DEMONSTRATION: Pass/Fail Statistics")
+    print("="*70)
+    
+    passed = sum(1 for s in system.students.values() if s.get_result_status() == 'PASS')
+    failed = len(system.students) - passed
+    pass_percentage = (passed / len(system.students)) * 100
+    
+    print(f"Total Students: {len(system.students)}")
+    print(f"Passed: {passed}")
+    print(f"Failed: {failed}")
+    print(f"Pass Percentage: {pass_percentage:.2f}%")
+    
+    print("\n" + "="*70)
+    print("DEMONSTRATION: Top Performers")
+    print("="*70)
+    
+    all_students = list(system.students.values())
+    all_students.sort(key=lambda x: x.calculate_percentage(), reverse=True)
+    
+    print("\nTop 3 Students Overall:")
+    for i, student in enumerate(all_students[:3], 1):
+        print(f"{i}. {student.name} - {student.calculate_percentage():.2f}% (Grade: {student.get_grade()})")
+
+
+def demo_programmatic_usage():
+    """Show how to use the system in code"""
+    
+    print("\n" + "="*70)
+    print("PROGRAMMATIC USAGE EXAMPLES")
+    print("="*70)
+    
+    # Create a student object
+    print("\n1. Creating a student object:")
+    student = Student('STU999', 'Test Student', '12th Grade', '999')
+    student.add_subject('Physics', 85, 100)
+    student.add_subject('Chemistry', 90, 100)
+    
+    print(f"   Name: {student.name}")
+    print(f"   Total: {student.calculate_total()}")
+    print(f"   Percentage: {student.calculate_percentage():.2f}%")
+    print(f"   Grade: {student.get_grade()}")
+    print(f"   Status: {student.get_result_status()}")
+    
+    # Using the system
+    print("\n2. Working with ResultManagementSystem:")
+    temp_system = ResultManagementSystem(filename='temp_demo.json')
+    temp_system.students['STU999'] = student
+    temp_system.save_data()
+    print("   Student saved to temp_demo.json")
+    
+    # Clean up
+    import os
+    if os.path.exists('temp_demo.json'):
+        os.remove('temp_demo.json')
+        print("   Temporary file cleaned up")
+
+
+if __name__ == "__main__":
+    print("="*70)
+    print("STUDENT RESULT MANAGEMENT SYSTEM - DEMONSTRATION".center(70))
+    print("="*70)
+    
+    # Add sample students
+    system = demo_add_sample_students()
+    
+    # Demonstrate features
+    demonstrate_features(system)
+    
+    # Show programmatic usage
+    demo_programmatic_usage()
+    
+    print("\n" + "="*70)
+    print("DEMONSTRATION COMPLETE!".center(70))
+    print("="*70)
+    print("\nSample data has been saved to 'demo_students.json'")
+    print("You can now run 'python student_result_system.py' to use the interactive system")
+    print("Or modify the demo data file to 'students_data.json' to use it as your main database")
